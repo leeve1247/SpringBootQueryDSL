@@ -1,0 +1,29 @@
+#H2 DB Setup
+spring:
+  datasource:
+    url: jdbc:h2:tcp://localhost/~/springbootquerydsl
+    username: sa
+    password:
+    driver-class-name: org.h2.Driver
+
+  #log ?? ???? ??
+  output:
+    ansi:
+      enabled: always
+
+  #JPA Setup
+  jpa:
+    hibernate:
+      ddl-auto: create
+    properties:
+      hibernate:
+        format_sql: true
+        highlight_sql: true
+        default_batch_fetch_size: 100
+
+logging:
+  level:
+    org.hibernate.sql: debug
+    org.springframework.transaction: info
+    org.springframework.orm.jpa: debug
+    org.hibernate.orm.jdbc.bind: trace
