@@ -45,7 +45,7 @@ tasks.named('test') {
 
 
 // QueryDSL START //
-def generated = 'src/main/generated'
+def generated = "src/main/generated"
 
 sourceSets {
     main.java.srcDirs += [generated]
