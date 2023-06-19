@@ -30,13 +30,21 @@ dependencies {
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
 
     // log 표시용
-    implementation("com.github.gavlyukovskiy:p6spy-spring-boot-starter:1.9.0")
+//    implementation("com.github.gavlyukovskiy:p6spy-spring-boot-starter:1.9.0")
 
     // QueryDSL
     implementation 'com.querydsl:querydsl-core'
     implementation 'com.querydsl:querydsl-jpa:5.0.0:jakarta'
     annotationProcessor("com.querydsl:querydsl-apt:5.0.0:jakarta",
             "jakarta.persistence:jakarta.persistence-api:3.1.0")
+
+    // blaze-persistence //QueryDSL 의 만료된 메서드에 관해서, QueryDSL 이 권장하는 대안 방안으로 활용할 수 있는 라이브러리를 다수 포함하고 있다.
+    // 문제 해결 과정
+    // 1. github 예시 -> maven -> gradle 안됨 2. blog -> 참고하기 어려움 3. maven Repository  -> 바로 해결
+    // 뭔가 hql 이 올바르게 참조가 되지 않는 문제가 있어서, 배제 하기로 함
+//    implementation 'com.blazebit:blaze-persistence-integration-querydsl-expressions-jakarta:1.6.9'
+//    implementation 'com.blazebit:blaze-persistence-integration-hibernate-5.6-jakarta:1.6.9'
+//    implementation 'com.blazebit:blaze-persistence-core-impl-jakarta:1.6.9'
 }
 
 tasks.named('test') {
