@@ -1,5 +1,7 @@
 package personal.tutorial.springbootquerydsl.entity;
 
+import com.blazebit.persistence.CriteriaBuilderFactory;
+import com.blazebit.persistence.querydsl.BlazeJPAQueryFactory;
 import com.querydsl.core.QueryResults;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import jakarta.persistence.EntityManager;
@@ -25,14 +27,17 @@ class MemberTest {
 
     @Autowired
     EntityManager em;
+    JPAQueryFactory queryFactory;
 
     @Autowired
-    EntityManagerFactory emf;
-    JPAQueryFactory queryFactory;
+    CriteriaBuilderFactory cbf;
+    BlazeJPAQueryFactory blazeQueryFactory;
+
 
     @BeforeEach
     public void testEntity(){
         queryFactory = new JPAQueryFactory(em); // 이건 동시성 문제를 고민하지 않아도 됨, 해결됨
+        blazeQueryFactory = new BlazeJPAQueryFactory(em, cbf);
 
         Team teamA = new Team("teamA");
         Team teamB = new Team("testB");
@@ -50,6 +55,7 @@ class MemberTest {
     }
 
     @Test
+    @DisplayName("멤버 조회 초기 테스트, JPQL")
     public void startJPQL() {
         //member1을 찾아라.
         Member findMember = em.createQuery(
@@ -65,7 +71,7 @@ class MemberTest {
     public void startQuerydsl() {
 
         //QMember m1 = new QMember("m3") //딱히 이걸 정해도 값이 바뀌지 않음.. hibernate 버전 업으로 인한 현상인듯 하오 // 별칭이 겹치는 문제를 해결하고자 하는 것인데, 별칭이 안 나뉘네...
-        Member findMember = queryFactory
+        Member findMember = blazeQueryFactory
                 .select(member)
                 .from(member)
                 .where(member.username.eq("member1")
@@ -101,20 +107,29 @@ class MemberTest {
 
         Member fetchFirst = queryFactory
                 .selectFrom(member)
-                .fetchFirst(); //맨 앞열 하나만 불러오는 기능
+                .fetchFirst(); //index = 0 행 하나만 불러오는 기능
 
-        QueryResults<Member> results = queryFactory
+        // List<Member> members = queryFactory
+        //         .selectFrom(member)
+        //         .fetchResults()
+        //         .getResults();
+
+        List<Member> members = blazeQueryFactory
                 .selectFrom(member)
-                .fetchResults();//이것에 대한 위험성? query-dsl은 원래 쿼리 내부에 서브쿼리르ㅗ 감싸느 ㄴ형식으로 만드는데,
+                .orderBy(member.id.asc())
+                .fetchResults(0, 2);
 
-        List<Member> memberList = results.getResults();
-        for (Member member1 : memberList) {
-            System.out.println("member1 = " + member1.getUsername());
+        for (Member member : members) {
+            System.out.println("member = " + member);
         }
 
-        long total = queryFactory
+        long totalQueryDsl = queryFactory
                 .selectFrom(member)
-                .fetchCount(); //select 문들을 전부 Count 로 전환하는 일을 한다.
+                .fetchCount();
+
+        long totalBlazeQueryDsl = blazeQueryFactory
+                .selectFrom(member)
+                .fetchCount(); //조회된 member의 수만큼 long type return 해준다.
         // 많은 것들이, deprecated 되어서 활용하기가 곤란하다.
     }
 }
