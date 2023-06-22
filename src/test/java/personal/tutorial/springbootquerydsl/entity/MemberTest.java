@@ -1,7 +1,5 @@
 package personal.tutorial.springbootquerydsl.entity;
 
-import com.blazebit.persistence.CriteriaBuilderFactory;
-import com.blazebit.persistence.querydsl.BlazeJPAQueryFactory;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.BeforeEach;
@@ -23,15 +21,15 @@ class MemberTest {
     EntityManager em;
     JPAQueryFactory queryFactory;
 
-    @Autowired
-    CriteriaBuilderFactory cbf;
-    BlazeJPAQueryFactory blazeQueryFactory;
+//    @Autowired
+//    CriteriaBuilderFactory cbf;
+//    BlazeJPAQueryFactory blazeQueryFactory;
 
 
     @BeforeEach
     public void testEntity(){
         queryFactory = new JPAQueryFactory(em); // 이건 동시성 문제를 고민하지 않아도 됨, 해결됨
-        blazeQueryFactory = new BlazeJPAQueryFactory(em, cbf);
+//        blazeQueryFactory = new BlazeJPAQueryFactory(em, cbf);
 
         Team teamA = new Team("teamA");
         Team teamB = new Team("testB");
