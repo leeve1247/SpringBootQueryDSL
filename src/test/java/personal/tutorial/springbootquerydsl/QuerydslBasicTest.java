@@ -4,10 +4,7 @@ import com.querydsl.core.BooleanBuilder;
 import com.querydsl.core.Tuple;
 import com.querydsl.core.types.ExpressionUtils;
 import com.querydsl.core.types.Projections;
-import com.querydsl.core.types.dsl.BooleanExpression;
-import com.querydsl.core.types.dsl.CaseBuilder;
-import com.querydsl.core.types.dsl.Expressions;
-import com.querydsl.core.types.dsl.NumberExpression;
+import com.querydsl.core.types.dsl.*;
 import com.querydsl.jpa.JPAExpressions;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import jakarta.persistence.EntityManager;
@@ -705,20 +702,21 @@ public class QuerydslBasicTest {
 
 
 
-    @Test
-    public void sqlFunction() {
-        //org.hibernate.dialect.function; //으로 가면 여러가지 sql function 에 대한 서술을 볼 수 있다.
-        List<String> results = queryFactory
-                .select(Expressions.stringTemplate(
-                        "function('replace', {0}, {1}, {2})",
-                        member.username, "member", "M"))
-                .from(member)
-                .fetch();
-
-        for (String result : results) {
-            System.out.println("result = " + result);
-        }
-    }
+//    @Test
+//    public void sqlFunction() {
+//        //org.hibernate.dialect.function.CommonFunctionFactory; //으로 가면 여러가지 sql function 에 대한 서술을 볼 수 있다.
+//        StringTemplate stringTemplate = Expressions.stringTemplate("function('replace', {0}, {1}, {2})",
+//                member.username, "member", "M");
+//        List<String> fetch = queryFactory
+//                .select(stringTemplate)
+//                .from(member)
+//                .fetch();
+//
+//        List<String> fetch2 = blazeQueryFactory
+//                .select(stringTemplate)
+//                .from(member)
+//                .fetch();
+//    }
 
     @Test
     public void sqlFunction2() {
