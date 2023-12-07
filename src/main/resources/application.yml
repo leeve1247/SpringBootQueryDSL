@@ -1,7 +1,7 @@
 #H2 DB Setup
 spring:
   datasource:
-    url: jdbc:h2:tcp://localhost/~/springbootquerydsl
+    url: jdbc:h2:tcp://localhost/~/springquerydsl
     username: sa
     password:
     driver-class-name: org.h2.Driver
@@ -18,9 +18,9 @@ spring:
     properties:
       hibernate:
         format_sql: true
-        highlight_sql: true
+        highlight_sql: true #실행되는 SQL 을 색깔 처리함
         show_sql: true
-        use_sql_comments: true
+        use_sql_comments: true #실행되는 JPQL을 확인할 수 있음
 
 logging:
   level:

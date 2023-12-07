@@ -1,6 +1,8 @@
 package personal.tutorial.springbootquerydsl;
 
+import com.blazebit.persistence.querydsl.BlazeJPAQueryFactory;
 import com.querydsl.core.BooleanBuilder;
+import com.querydsl.core.QueryResults;
 import com.querydsl.core.Tuple;
 import com.querydsl.core.types.ExpressionUtils;
 import com.querydsl.core.types.Projections;
@@ -11,7 +13,6 @@ import jakarta.persistence.EntityManager;
 import jakarta.persistence.EntityManagerFactory;
 import jakarta.persistence.PersistenceUnit;
 import org.assertj.core.api.Assertions;
-import org.hibernate.sql.ast.spi.AbstractSqlAstTranslator;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -37,15 +38,12 @@ public class QuerydslBasicTest {
     @Autowired
     EntityManager em;
     JPAQueryFactory queryFactory;
-
-//    @Autowired
-//    CriteriaBuilderFactory cbf;
-//    BlazeJPAQueryFactory blazeQueryFactory;
+    BlazeJPAQueryFactory blazeJPAQueryFactory;
 
     @BeforeEach
     public void before() {
-        queryFactory = new JPAQueryFactory(em); // 이건 동시성 문제를 고민하지 않아도 됨, 해결이 됨 spring frame 이 주입해주는 빈 자체가 트랜잭션 에 따라 멀티스레드에서 문제 없이 주입을 해주기 때문에, 큰 문제가 되지 않는다.
-//        blazeQueryFactory = new BlazeJPAQueryFactory(em, cbf);
+        queryFactory = new JPAQueryFactory(em); // 이건 동시성 문제(여러개의 메소드가 한번에 같은 인스턴스를 참조한다든지 하는 문제)를 고민하지 않아도 됨, 해결이 됨 spring frame 이 주입해주는 빈 자체가 트랜잭션 에 따라 멀티스레드에서 문제 없이 주입을 해주기 때문에, 큰 문제가 되지 않는다.
+        //blazeQueryFactory = new BlazeJPAQueryFactory(em, cbf);
 
         Team teamA = new Team("teamA");
         Team teamB = new Team("teamB");
@@ -77,15 +75,38 @@ public class QuerydslBasicTest {
     @Test
     @DisplayName("멤버 조회 초기 테스트, QueryDSL")
     public void startQuerydsl() {
-
         //QMember m1 = new QMember("m3") //딱히 이걸 정해도 값이 바뀌지 않음.. hibernate 버전 업으로 인한 현상인듯 하오 // 별칭이 겹치는 문제를 해결하고자 하는 것인데, 별칭이 안 나뉘네...
+        Member findMember = queryFactory
+                .select(member)
+                .from(member)
+                .where(member.username.eq("member1"))
+                .fetchOne();
+        assert findMember != null;
+        assertThat(findMember.getUsername()).isEqualTo("member1");
+    }
+
+    @Test
+    @DisplayName("멤버 조회 초기 테스트, QueryDSL2")
+    public void startQuerydsl2() {
+        QMember m = new QMember("m");
         Member findMember = queryFactory
                 .select(member)
                 .from(member)
                 .where(member.username.eq("member1")
                         .and(member.age.eq(10)))
                 .fetchOne();
+        assert findMember != null;
+        assertThat(findMember.getUsername()).isEqualTo("member1");
+    }
 
+    @Test
+    @DisplayName("멤버 조회 초기 테스트, QueryDSL3")
+    public void startQuerydsl3() {
+        Member findMember = queryFactory
+                .select(member)
+                .from(member)
+                .where(member.username.eq("member1"))
+                .fetchOne();
         assert findMember != null;
         assertThat(findMember.getUsername()).isEqualTo("member1");
     }
@@ -95,7 +116,7 @@ public class QuerydslBasicTest {
     public void search() {
         Member findMember = queryFactory
                 .selectFrom(member)
-                .where(member.username.eq("member1"), member.age.between(10,20)) //parameter를 여러개 넘길 경우, and 의 형태로, 모든 것을 만족하는 경우에 대한 쿼리를 날린다. 동적 쿼리로서, 조건을 여러개 설정할 때 기가 막히게 처리를 한다.
+                .where(member.username.eq("member1"), member.age.between(10, 20)) //parameter를 여러개 넘길 경우, and 의 형태로, 모든 것을 만족하는 경우에 대한 쿼리를 날린다. 동적 쿼리로서, 조건을 여러개 설정할 때 기가 막히게 처리를 한다.
                 .fetchOne();
 
         assert findMember != null;
@@ -109,7 +130,7 @@ public class QuerydslBasicTest {
                 .selectFrom(member)
                 .where(
                         member.username.eq("member1"),
-                        member.age.between(10,20)) //parameter를 여러개 넘길 경우, and 의 형태로, 모든 것을 만족하는 경우에 대한 쿼리를 날린다. 동적 쿼리로서, 조건을 여러개 설정할 때 기가 막히게 처리를 한다.
+                        member.age.between(10, 20)) //parameter를 여러개 넘길 경우, and 의 형태로, 모든 것을 만족하는 경우에 대한 쿼리를 날린다. 동적 쿼리로서, 조건을 여러개 설정할 때 기가 막히게 처리를 한다.
                 .fetchOne();
 
         assert findMember != null;
@@ -132,16 +153,16 @@ public class QuerydslBasicTest {
         assertThat(totalBlazeQueryDsl).isEqualTo(4);
     }
 
-//    @Test
-//    public void getTotalResults() {
-//        BlazeJPAQuery<Member> totalMemberQuery = blazeQueryFactory
-//                .selectFrom(member)
-//                .orderBy(member.id.asc());
-//        long fetchCount = totalMemberQuery.fetchCount();
-//        List<Member> members = totalMemberQuery.fetchPage(0, 20);
-//        System.out.println("fetchCount = " + fetchCount);
-//        System.out.println("members = " + members);
-//    }
+    //@Test
+    //public void getTotalResults() {
+    //    BlazeJPAQuery<Member> totalMemberQuery = blazeQueryFactory
+    //            .selectFrom(member)
+    //            .orderBy(member.id.asc());
+    //    long fetchCount = totalMemberQuery.fetchCount();
+    //    List<Member> members = totalMemberQuery.fetchPage(0, 20);
+    //    System.out.println("fetchCount = " + fetchCount);
+    //    System.out.println("members = " + members);
+    //}
 
     /**
      * 회원 정렬 순서
@@ -196,6 +217,21 @@ public class QuerydslBasicTest {
     }
 
     @Test
+    @DisplayName("회원 정렬 2 with fetch result")
+    public void paging2_1() {
+        QueryResults<Member> queryResults = queryFactory
+                .selectFrom(member)
+                .orderBy(member.username.desc())
+                .offset(1)
+                .limit(2)
+                .fetchResults(); //Count 가 실행되면서 모든 DB를 조인하게 되므로 주의할 것
+        assertThat(queryResults.getTotal()).isEqualTo(4);
+        assertThat(queryResults.getLimit()).isEqualTo(2);
+        assertThat(queryResults.getOffset()).isEqualTo(1);
+        assertThat(queryResults.getResults().size()).isEqualTo(2);
+    }
+
+    @Test
     @DisplayName("집합")
     public void aggregation() {
         List<Tuple> result = queryFactory //DataType 이 여러개 들어온다 싶으면 tuple을 쓰지만, 실무에선 잘 안쓰고, DTO를 직접 만들어 처리한다.
@@ -221,7 +257,7 @@ public class QuerydslBasicTest {
      */
     @Test
     @DisplayName("팀 이름과 나이를 찾기")
-    public void groupByTeamNameAndAge() throws Exception{
+    public void groupByTeamNameAndAge() throws Exception {
         //given
         List<Tuple> fetch = queryFactory
                 .select(team.name, member.age.avg())
@@ -312,7 +348,7 @@ public class QuerydslBasicTest {
 
     @Test
     @DisplayName("페치 조인 없을 때")
-    public void fetchJoinNo(){
+    public void fetchJoinNo() {
         em.flush();
         em.clear();
 
@@ -327,7 +363,7 @@ public class QuerydslBasicTest {
 
     @Test
     @DisplayName("페치 조인 있을 때") //연관관계가 있을 때, Lazy보다 우선하여 한번에 불러오는 역할을 수행한다.
-    public void fetchJoinUsed(){
+    public void fetchJoinUsed() {
         em.flush();
         em.clear();
 
@@ -393,7 +429,7 @@ public class QuerydslBasicTest {
                 .fetch();
 
         Assertions.assertThat(result).extracting("age")
-                .containsExactly(20,30, 40);
+                .containsExactly(20, 30, 40);
     }
 
     @Test //언젠가 해결될거라고 생각하는데.. 해결됐나 이거?
@@ -414,10 +450,10 @@ public class QuerydslBasicTest {
     }
 
     @Test
-    public void basicCase(){
+    public void basicCase() {
         List<String> results = queryFactory
                 .select(member.age
-                        .when(10).then("열살") .when(20).then("스무살") .otherwise("기타"))
+                        .when(10).then("열살").when(20).then("스무살").otherwise("기타"))
                 .from(member)
                 .fetch();
         for (String result : results) {
@@ -427,7 +463,7 @@ public class QuerydslBasicTest {
     }
 
     @Test
-    public void complexCase(){
+    public void complexCase() {
         List<String> results = queryFactory
                 .select(new CaseBuilder()
                         .when(member.age.between(0, 20)).then("0~20살")
@@ -441,7 +477,7 @@ public class QuerydslBasicTest {
     }
 
     @Test
-    public void groupingCase(){
+    public void groupingCase() {
         NumberExpression<Integer> rankPath = new CaseBuilder()
                 .when(member.age.between(0, 20)).then(2)
                 .when(member.age.between(21, 30)).then(1)
@@ -456,7 +492,8 @@ public class QuerydslBasicTest {
             Integer age = tuple.get(member.age);
             Integer rank = tuple.get(rankPath);
             System.out.println("username = " + username + " age = " + age + " rank = "
-                    + rank); }
+                    + rank);
+        }
     }
 
     @Test
@@ -471,7 +508,7 @@ public class QuerydslBasicTest {
     }
 
     @Test
-    public void concat(){
+    public void concat() {
         String result = queryFactory
                 .select(member.username.concat("_").concat(member.age.stringValue()))
                 .from(member)
@@ -504,7 +541,7 @@ public class QuerydslBasicTest {
     }
 
     @Test
-    public void findDtoByQueryDSL(){
+    public void findDtoByQueryDSL() {
         List<MemberDto> memberDtoList = queryFactory
                 .select(Projections.bean(MemberDto.class, //Setter을 통해 데이터를 주입
                         member.username,
@@ -517,7 +554,7 @@ public class QuerydslBasicTest {
     }
 
     @Test
-    public void findDtoByField(){
+    public void findDtoByField() {
         List<MemberDto> memberDtoList = queryFactory
                 .select(Projections.fields(MemberDto.class, //이렇게 하면 Getter Setter 없이 바로 field 데이터에 투사시킨다.
                         member.username,
@@ -530,7 +567,7 @@ public class QuerydslBasicTest {
     }
 
     @Test
-    public void findDtoByConstructor(){
+    public void findDtoByConstructor() {
         List<MemberDto> memberDtoList = queryFactory
                 .select(Projections.constructor(MemberDto.class, //생성자 필드 순서에 맞게 변수를 만들어야 한다.
                         member.username,
@@ -543,7 +580,7 @@ public class QuerydslBasicTest {
     }
 
     @Test
-    public void findUserDto(){
+    public void findUserDto() {
         QMember memberSub = new QMember("memberSub");
         List<UserDto> memberDtoList = queryFactory //이건 blazeQueryFactory가 정상 동작하지 않음
                 .select(Projections.fields(UserDto.class, //생성자 필드 순서에 맞게 변수를 만들어야 한다.
@@ -562,7 +599,7 @@ public class QuerydslBasicTest {
     }
 
     @Test
-    public void findUserDtoByConstructor(){
+    public void findUserDtoByConstructor() {
         List<MemberDto> memberDtoList = queryFactory
                 .select(Projections.constructor(MemberDto.class,
                         member.username,
@@ -575,7 +612,7 @@ public class QuerydslBasicTest {
     }
 
     @Test
-    public void findUserDtoByProjection(){
+    public void findUserDtoByProjection() {
         List<MemberDto> memberDtoList = queryFactory
                 .select(new QMemberDto(member.username, member.age)) //컴파일 에러로, 추가 필드 타입 입력시 에러 발생, 다만, Q파일 생성해야 해서 QueryDSL에 의존성을 가지게 되는 문제가 발생, 깔끔하게 쓰고 싶을 땐 기피해야하는 방식
                 .from(member)
@@ -586,7 +623,7 @@ public class QuerydslBasicTest {
     }
 
     @Test
-    public void findUserDtoBydistinct(){
+    public void findUserDtoBydistinct() {
         List<String> result = queryFactory
                 .select(member.username).distinct()
                 .from(member)
@@ -621,21 +658,25 @@ public class QuerydslBasicTest {
 
     /* ======= 동적 쿼리를 해결하는 좀더 깰끔스한 방식 ======== */
     @Test
-    public void dynamicWhereParam() throws Exception { String usernameParam = "member1";
+    public void dynamicWhereParam() throws Exception {
+        String usernameParam = "member1";
         Integer ageParam = 10;
         List<Member> result = searchMember2(usernameParam, ageParam);
         Assertions.assertThat(result.size()).isEqualTo(1);
     }
+
     private List<Member> searchMember2(String usernameCond, Integer ageCond) {
         return queryFactory
                 .selectFrom(member)
                 // .where(usernameEq(usernameCond), ageEq(ageCond))
-                .where(allEq(usernameCond,ageCond))
+                .where(allEq(usernameCond, ageCond))
                 .fetch();
     }
+
     private BooleanExpression usernameEq(String usernameCond) {
         return usernameCond != null ? member.username.eq(usernameCond) : null;
     }
+
     private BooleanExpression ageEq(Integer ageCond) {
         return ageCond != null ? member.age.eq(ageCond) : null;
     }
@@ -701,36 +742,40 @@ public class QuerydslBasicTest {
     }
 
 
-
-//    @Test
-//    public void sqlFunction() {
-//        //org.hibernate.dialect.function.CommonFunctionFactory; //으로 가면 여러가지 sql function 에 대한 서술을 볼 수 있다.
-//        StringTemplate stringTemplate = Expressions.stringTemplate("function('replace', {0}, {1}, {2})",
-//                member.username, "member", "M");
-//        List<String> fetch = queryFactory
-//                .select(stringTemplate)
-//                .from(member)
-//                .fetch();
-//
-//        List<String> fetch2 = blazeQueryFactory
-//                .select(stringTemplate)
-//                .from(member)
-//                .fetch();
-//    }
+    //@Test
+    //public void sqlFunction() {
+    //    //org.hibernate.dialect.function.CommonFunctionFactory; //으로 가면 여러가지 sql function 에 대한 서술을 볼 수 있다.
+    //    StringTemplate stringTemplate = Expressions.stringTemplate("function('replace', {0}, {1}, {2})",
+    //            member.username, "member", "M");
+    //    List<String> fetch = queryFactory
+    //            .select(stringTemplate)
+    //            .from(member)
+    //            .fetch();
+    //
+    //    List<String> fetch2 = blazeQueryFactory
+    //            .select(stringTemplate)
+    //            .from(member)
+    //            .fetch();
+    //}
 
     @Test
     public void sqlFunction2() {
         List<String> results = queryFactory
                 .select(member.username)
                 .from(member)
-//                .where(member.username.eq(
-//                        Expressions.stringTemplate("function('lower', {0})", member.username)
-//                ))
+                //.where(member.username.eq(
+                //        Expressions.stringTemplate("function('lower', {0})", member.username)
+                //))
                 .where(member.username.eq(member.username.lower()))
                 .fetch();
 
         for (String result : results) {
             System.out.println("result = " + result);
         }
+    }
+
+    //섹션 7 스프링 데이터 JPA가 제공하는 QueryDSL 기능
+    @Test
+    public void querydslPredicateExecutorTest() {
     }
 }

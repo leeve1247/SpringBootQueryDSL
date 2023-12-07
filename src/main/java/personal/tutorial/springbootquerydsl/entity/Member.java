@@ -9,9 +9,11 @@ import lombok.ToString;
 @Entity
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED) //엔티티 생성에는 기본 생성자가 필요하다..
-    @ToString(of = {"id", "username", "age"})
+@ToString(of = {"id", "username", "age"}) // 가급적 내부 필드만 활성화 할 것
 public class Member {
-    @Id @GeneratedValue @Column(name = "member_id")
+    @Id
+    @GeneratedValue
+    @Column(name = "member_id")
     private Long id;
     private String username;
     private int age;

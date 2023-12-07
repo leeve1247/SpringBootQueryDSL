@@ -5,6 +5,7 @@ import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.BeforeEach;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.annotation.Commit;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
@@ -15,6 +16,7 @@ import static personal.tutorial.springbootquerydsl.entity.QMember.member;
 
 @SpringBootTest
 @Transactional
+//@Commit <-- 이게 있으면 Commit 되면서 DB 에 박제가 되는데, 이렇게 되면 다른 테스트와 꼬일 수 있는 문제가 있다.
 class MemberTest {
 
     @Autowired
