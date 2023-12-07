@@ -1,5 +1,8 @@
 package personal.tutorial.springbootquerydsl;
 
+import com.blazebit.persistence.CriteriaBuilderFactory;
+import com.blazebit.persistence.PagedList;
+import com.blazebit.persistence.querydsl.BlazeJPAQuery;
 import com.blazebit.persistence.querydsl.BlazeJPAQueryFactory;
 import com.querydsl.core.BooleanBuilder;
 import com.querydsl.core.QueryResults;
@@ -35,15 +38,18 @@ import static personal.tutorial.springbootquerydsl.entity.QTeam.team;
 @SpringBootTest
 @Transactional
 public class QuerydslBasicTest {
+
+    @Autowired
+    CriteriaBuilderFactory cbf;
     @Autowired
     EntityManager em;
     JPAQueryFactory queryFactory;
-    BlazeJPAQueryFactory blazeJPAQueryFactory;
+    BlazeJPAQueryFactory blazeQueryFactory;
 
     @BeforeEach
     public void before() {
         queryFactory = new JPAQueryFactory(em); // 이건 동시성 문제(여러개의 메소드가 한번에 같은 인스턴스를 참조한다든지 하는 문제)를 고민하지 않아도 됨, 해결이 됨 spring frame 이 주입해주는 빈 자체가 트랜잭션 에 따라 멀티스레드에서 문제 없이 주입을 해주기 때문에, 큰 문제가 되지 않는다.
-        //blazeQueryFactory = new BlazeJPAQueryFactory(em, cbf);
+        blazeQueryFactory = new BlazeJPAQueryFactory(em, cbf);
 
         Team teamA = new Team("teamA");
         Team teamB = new Team("teamB");
@@ -147,22 +153,22 @@ public class QuerydslBasicTest {
                 .selectFrom(member)
                 .fetchFirst(); //index = 0 행 하나만 불러오는 기능
 
-        long totalBlazeQueryDsl = queryFactory
+        long count = blazeQueryFactory
                 .selectFrom(member)
                 .fetchCount(); //조회된 member의 수만큼 long type return 해준다.
-        assertThat(totalBlazeQueryDsl).isEqualTo(4);
+        assertThat(count).isEqualTo(4);
     }
 
-    //@Test
-    //public void getTotalResults() {
-    //    BlazeJPAQuery<Member> totalMemberQuery = blazeQueryFactory
-    //            .selectFrom(member)
-    //            .orderBy(member.id.asc());
-    //    long fetchCount = totalMemberQuery.fetchCount();
-    //    List<Member> members = totalMemberQuery.fetchPage(0, 20);
-    //    System.out.println("fetchCount = " + fetchCount);
-    //    System.out.println("members = " + members);
-    //}
+    @Test
+    public void getTotalResults() {
+        BlazeJPAQuery<Member> totalMemberQuery = blazeQueryFactory
+                .selectFrom(member)
+                .orderBy(member.id.asc());
+        long fetchCount = totalMemberQuery.fetchCount();
+        List<Member> members = totalMemberQuery.fetchPage(0, 20);
+        System.out.println("fetchCount = " + fetchCount);
+        System.out.println("members = " + members);
+    }
 
     /**
      * 회원 정렬 순서
@@ -225,10 +231,36 @@ public class QuerydslBasicTest {
                 .offset(1)
                 .limit(2)
                 .fetchResults(); //Count 가 실행되면서 모든 DB를 조인하게 되므로 주의할 것
+        for (Member member : queryResults.getResults()){
+            System.out.println("member = " + member);
+        };
         assertThat(queryResults.getTotal()).isEqualTo(4);
         assertThat(queryResults.getLimit()).isEqualTo(2);
         assertThat(queryResults.getOffset()).isEqualTo(1);
         assertThat(queryResults.getResults().size()).isEqualTo(2);
+    }
+
+    @Test
+    @DisplayName("회원 정렬 2 with fetch result")
+    public void paging2_2() {
+        long myOffset = 1;
+        long myLimit = 2;
+        BlazeJPAQuery<Member> memberBlazeJPAQuery = blazeQueryFactory
+                .selectFrom(member)
+                .orderBy(member.username.desc())
+                .offset(myOffset)
+                .limit(myLimit);
+
+        long memberCount = memberBlazeJPAQuery
+                .fetchCount();//Count 가 실행되면서 모든 DB를 조인하게 되므로 주의할 것
+        List<Member> members = memberBlazeJPAQuery
+                .fetch();
+        for (Member member : members){
+            System.out.println("member = " + member);
+        };
+        assertThat(myOffset).isEqualTo(1);
+        assertThat(myLimit).isEqualTo(2);
+        assertThat(memberCount).isEqualTo(2);
     }
 
     @Test
@@ -586,6 +618,24 @@ public class QuerydslBasicTest {
                 .select(Projections.fields(UserDto.class, //생성자 필드 순서에 맞게 변수를 만들어야 한다.
                         member.username.as("name"),
                         // member.age 대신 서브쿼리로 다 최대 나이로 찍고 싶어
+                        ExpressionUtils.as(
+                                JPAExpressions
+                                        .select(memberSub.age.max())
+                                        .from(memberSub), "age")
+                ))
+                .from(member)
+                .fetch();
+        for (UserDto userDto : memberDtoList) {
+            System.out.println("userDto = " + userDto);
+        }
+    }
+
+    @Test
+    public void findUserDtoBlazePersistence() {
+        QMember memberSub = new QMember("memberSub");
+        List<UserDto> memberDtoList = blazeQueryFactory //이건 blazeQueryFactory가 정상 동작하지 않음
+                .select(Projections.fields(UserDto.class, //생성자 필드 순서에 맞게 변수를 만들어야 한다.
+                        member.username.as("name"),
                         ExpressionUtils.as(
                                 JPAExpressions
                                         .select(memberSub.age.max())
