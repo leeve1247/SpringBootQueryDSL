@@ -53,7 +53,7 @@ tasks.named('test') {
 }
 
 
-// QueryDSL START //
+// QueryDSL START (기본 generated 쿼리문을 생성하는 gradle)//
 def generated = "src/main/generated"
 
 sourceSets {
